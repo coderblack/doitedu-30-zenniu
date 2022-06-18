@@ -31,7 +31,7 @@ public class LogRunnable implements Runnable {
 
         try {
             long off = 0;
-            while(ActionLogAutoGen.flag) {
+            while(true) {
                 LogBeanWrapper logBeanWrapper = userPart.get(RandomUtils.nextInt(0, userPart.size()));
 
                 // 每用户的随机日志条数

@@ -28,14 +28,21 @@ public class UserTagsGen {
 
     public static void main(String[] args) throws IOException {
 
+        // hbase的zookeeper地址
+        String zkHost = "doitedu:2181";
+        // hbase中的画像表名称
+        String tableName = "zenniu_profile";
+        // 需要生成的用户数
+        int userCount = 10000;
+
         Configuration conf = new Configuration();
-        conf.set("hbase.zookeeper.quorum", "doitedu:2181");
+        conf.set("hbase.zookeeper.quorum", zkHost);
 
         Connection conn = ConnectionFactory.createConnection(conf);
-        Table table = conn.getTable(TableName.valueOf("zenniu_profile"));
+        Table table = conn.getTable(TableName.valueOf(tableName));
 
         ArrayList<Put> puts = new ArrayList<>();
-        for (int i = 1; i <= 100000; i++) {
+        for (int i = 1; i <= userCount; i++) {
 
             // 生成一个用户的画像标签数据
             String deviceId = StringUtils.leftPad(i + "", 6, "0");

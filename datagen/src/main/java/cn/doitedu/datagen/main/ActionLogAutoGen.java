@@ -54,14 +54,23 @@ import java.util.*;
  * [root@hdp01 kafka_2.11-2.0.0]# bin/kafka-topics.sh --list --zookeeper hdp01:2181
  */
 public class ActionLogAutoGen {
-    public static volatile boolean flag = true;
+    //public static volatile boolean flag = true;
 
     public static void main(String[] args) throws Exception {
-
+        // 第一次运行（或者后期需要重新初始化），设置为true
         boolean isInitial = false;
+        // 第一次运行（或者后期需要重新初始化），设置为初始用户数，否则为 “增量用户数”
         int needNewUser = -1;
-        boolean needSave = true;
+        // 是否需要将增量用户合并到历史用户并保存
+        boolean needSave = false;
+        // 用户数据保存目录
         String hisUserDataPath = "data/users/";
+        // 输出方式：console 或  kafka
+        String collectorType = "kafka";
+        String topic = "zen-mall-events";
+        String host = "doitedu:9092";
+
+
 
         File hisUserDir = new File(hisUserDataPath);
 
@@ -94,6 +103,7 @@ public class ActionLogAutoGen {
         }
 
         if(needNewUser > 0) {
+            System.out.println("准备生成增量新用户");
             // 添加新用户
             UserUtils.addNewUsers(hisUsers, needNewUser, needSave);
         }
@@ -104,13 +114,11 @@ public class ActionLogAutoGen {
         System.out.println("日活用户总数：" + wrapperedUsers.size() + "-------");
 
         // 多线程并行生成日志
-
-        //Collector collector = new CollectorKafkaImpl("events");
-        genBatchToCollector(wrapperedUsers, 3, 5);
+        genBatchToCollector(collectorType,wrapperedUsers, 3, 5 ,topic ,host);
 
     }
 
-    private static void genBatchToCollector(List<LogBeanWrapper> wrapperedUsers, int threads, int logPerThrad) {
+    private static void genBatchToCollector(String collectorType, List<LogBeanWrapper> wrapperedUsers, int threads, int logPerThrad ,String topic ,String host) {
         int partSize = wrapperedUsers.size() / threads;
 
         for (int i = 0; i < threads; i++) {
@@ -120,7 +128,12 @@ public class ActionLogAutoGen {
                 userPart.add(wrapperedUsers.get(j));
             }
 
-            Collector collector = new CollectorConsoleImpl();
+            Collector collector = null;
+            if(collectorType.equals("kafka")) {
+                collector = new CollectorKafkaImpl(topic,host);
+            }else{
+                collector = new CollectorConsoleImpl();
+            }
             new Thread(new LogRunnable(userPart, collector, 10)).start();
         }
     }

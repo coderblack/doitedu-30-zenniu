@@ -37,10 +37,12 @@ public class UserUtils {
 
     public static String addNewUsers(HashMap<String,LogBean> users,int cnt,boolean save) throws IOException {
 
-        for (int i = 0; i < cnt; i++) {
+        System.out.println("新用户开始生成, 历史用户最大id：" + users.size() + "本次将增加用户：" + cnt);
+        int hisMaxId = users.size();
+        for (int i = hisMaxId+1; i <= hisMaxId+cnt; i++) {
             LogBean logBean = new LogBean();
-            // 生成的账号形如： 004078
-            String account = RandomStringUtils.randomAlphabetic(5).toLowerCase();
+            // 生成的账号形如： u004078
+            String account = "u"+RandomStringUtils.randomAlphabetic(5).toLowerCase();
             logBean.setAccount(account);
             logBean.setAppId("cn.doitedu.yinew");
             logBean.setAppVersion(appVersions[RandomUtils.nextInt(0,appVersions.length)]);
@@ -63,6 +65,8 @@ public class UserUtils {
             }
             logBean.setNetType(netTypes[RandomUtils.nextInt(0, netTypes.length)]);
             logBean.setResolution(resolutions[RandomUtils.nextInt(0, resolutions.length)]);
+
+            logBean.setTestGuid(i);
 
             users.put(logBean.getDeviceId()+logBean.getAccount(),logBean);
         }

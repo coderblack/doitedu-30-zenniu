@@ -12,9 +12,9 @@ public class CollectorKafkaImpl implements Collector {
 
     int messageSeq = 0;
 
-    public CollectorKafkaImpl(String topicName){
+    public CollectorKafkaImpl(String topicName , String host){
         Properties props = new Properties();
-        props.setProperty("bootstrap.servers", "doitedu:9092");
+        props.setProperty("bootstrap.servers", host);
         props.put("key.serializer", "org.apache.kafka.common.serialization.IntegerSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 

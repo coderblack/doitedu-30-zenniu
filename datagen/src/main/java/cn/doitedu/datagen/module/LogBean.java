@@ -24,6 +24,7 @@ public class LogBean {
     private long timeStamp        ;
     private String eventId        ;
     private Map<String,String> properties;
+    private int testGuid;
 
 
 }
