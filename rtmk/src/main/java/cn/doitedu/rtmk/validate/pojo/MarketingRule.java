@@ -17,7 +17,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MarketingRule {
-    // 规则ID
+    // 规则 ID
     private String ruleId;
 
     // keyby的字段, comma seperated  "province,city"  | "guid"
