@@ -11,7 +11,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class UserMallEvent {
 
-    private long guid;
+    private long testGuid;
     private String account        ;
     private String appId          ;
     private String appVersion     ;
