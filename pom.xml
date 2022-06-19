@@ -154,9 +154,9 @@
         <!--<dependency>
             <groupId>com.ververica</groupId>
             <artifactId>flink-sql-connector-mysql-cdc</artifactId>
-            <version>2.3-SNAPSHOT</version>
-        </dependency>
-        -->
+            <version>2.3-doitedu</version>
+        </dependency>-->
+
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-connector-hbase-2.2_2.12</artifactId>

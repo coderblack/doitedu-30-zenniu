@@ -33,7 +33,7 @@ public class UserTagsGen {
         // hbase中的画像表名称
         String tableName = "zenniu_profile";
         // 需要生成的用户数
-        int userCount = 10000;
+        int userCount = 1000;
 
         Configuration conf = new Configuration();
         conf.set("hbase.zookeeper.quorum", zkHost);

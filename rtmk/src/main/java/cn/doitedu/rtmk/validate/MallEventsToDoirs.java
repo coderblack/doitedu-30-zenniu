@@ -19,9 +19,14 @@ public class MallEventsToDoirs {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tenv = StreamTableEnvironment.create(env);
 
+        // kafka  source 表定义
         tenv.executeSql(SqlHolder.KAFKA_EVENTS_SOURCE_DDL);
-        tenv.executeSql(SqlHolder.DORIS_DETAIL_SINK_DDL);
-        tenv.executeSql(SqlHolder.DORIS_DETAIL_SINK_DML).print();
+
+        // doris sink表定义
+        tenv.executeSql(SqlHolder.DORIS_EVENTS_DETAIL_SINK_DDL);
+
+        // 执行insert语句
+        tenv.executeSql(SqlHolder.DORIS_EVENTS_DETAIL_SINK_DML).print();
 
 
     }

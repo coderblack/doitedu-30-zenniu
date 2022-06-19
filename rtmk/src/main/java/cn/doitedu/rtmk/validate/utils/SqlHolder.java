@@ -8,39 +8,39 @@ package cn.doitedu.rtmk.validate.utils;
  **/
 public class SqlHolder {
 
-    public static final String DORIS_DETAIL_SINK_DDL
+    public static final String DORIS_EVENTS_DETAIL_SINK_DDL
             = "CREATE TABLE doris_appdetail_sink (\n" +
-            "  guid                   BIGINT                ,\n" +
-            "  eventid                String                ,\n" +
-            "  eventTime              BIGINT                ,\n" +
-            "  dw_date                STRING                ,\n" +
-            "  releasechannel         String                ,\n" +
-            "  account                String                ,\n" +
-            "  appid                  String                ,\n" +
-            "  appversion             String                ,\n" +
-            "  carrier                String                ,\n" +
-            "  deviceid               String                ,\n" +
-            "  devicetype             String                ,\n" +
-            "  ip                     String                ,\n" +
-            "  latitude               double                ,\n" +
-            "  longitude              double                ,\n" +
-            "  nettype                String                ,\n" +
-            "  osname                 String                ,\n" +
-            "  osversion              String                ,\n" +
-            "  resolution             String                ,\n" +
-            "  sessionid              String                ,\n" +
-            "  propsJson              String                 \n" +
-            ") \n" +
-            "    WITH (\n" +
-            "      'connector' = 'doris',\n" +
-            "      'fenodes' = 'doitedu:8030',\n" +
-            "      'table.identifier' = 'rtmk.dwd_mall_events',\n" +
-            "      'username' = 'root',\n" +
-            "      'password' = ''\n" +
+            "  guid                   BIGINT                , " +
+            "  eventid                String                , " +
+            "  eventTime              BIGINT                , " +
+            "  dw_date                STRING                , " +
+            "  releasechannel         String                , " +
+            "  account                String                , " +
+            "  appid                  String                , " +
+            "  appversion             String                , " +
+            "  carrier                String                , " +
+            "  deviceid               String                , " +
+            "  devicetype             String                , " +
+            "  ip                     String                , " +
+            "  latitude               double                , " +
+            "  longitude              double                , " +
+            "  nettype                String                , " +
+            "  osname                 String                , " +
+            "  osversion              String                , " +
+            "  resolution             String                , " +
+            "  sessionid              String                , " +
+            "  propsJson              String                  " +
+            ")  " +
+            "    WITH ( " +
+            "      'connector' = 'doris', " +
+            "      'fenodes' = 'doitedu:8030', " +
+            "      'table.identifier' = 'rtmk.dwd_mall_app_events',  " +
+            "      'username' = 'root', " +
+            "      'password' = ''  " +
             ")";
 
 
-    public static final String  DORIS_DETAIL_SINK_DML
+    public static final String DORIS_EVENTS_DETAIL_SINK_DML
             = "INSERT INTO doris_appdetail_sink      \n" +
             "SELECT              \n" +
             "  testGuid as guid             ,\n" +
@@ -86,13 +86,13 @@ public class SqlHolder {
           +       "  osVersion              String ,                   "
           +       "  resolution             String ,                   "
           +       "  sessionId              String ,                   "
-          +       "  properties             String              "
+          +       "  properties             String                     "
             + " ) WITH (                                               "
             + "  'connector' = 'kafka',                                "
             + "  'topic' = 'zen-mall-events',                          "
             + "  'properties.bootstrap.servers' = 'doitedu:9092',      "
             + "  'properties.group.id' = 'testGroup',                  "
-            + "  'scan.startup.mode' = 'earliest-offset',                "
+            + "  'scan.startup.mode' = 'latest-offset',                "
             + "  'value.format'='json',                                "
             + "  'value.json.fail-on-missing-field'='false'            "
             + " )                                                      ";
