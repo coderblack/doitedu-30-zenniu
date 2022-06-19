@@ -7,9 +7,10 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 /**
  * @Author: deep as the sea
  * @Site: <a href="www.51doit.com">多易教育</a>
- * @QQ: 657270652  @WX: doitedu2018
- * @Date: 2022/6/18
- * @Desc: 商城用户行为事件从kafka接入doris
+ * @QQ: 657270652
+ * @Date: 2022/6/19
+ * @Desc: 学大数据，到多易教育
+ *    商城用户行为事件从kafka接入doris
  **/
 public class MallEventsToDoirs {
 
@@ -17,7 +18,6 @@ public class MallEventsToDoirs {
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tenv = StreamTableEnvironment.create(env);
-
 
         tenv.executeSql(SqlHolder.KAFKA_EVENTS_SOURCE_DDL);
         tenv.executeSql(SqlHolder.DORIS_DETAIL_SINK_DDL);
