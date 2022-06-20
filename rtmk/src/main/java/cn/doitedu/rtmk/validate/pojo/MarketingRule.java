@@ -19,25 +19,21 @@ import java.util.Map;
 public class MarketingRule {
     // 规则 ID
     private String ruleId;
-
     // keyby的字段, comma seperated  "province,city"  | "guid"
     private String keyByFields;
-
     // 触发事件
     private EventUnitCondition triggerEventCondition;
-
     // 画像属性条件
     private Map<String,String> userProfileConditions;
-
     // 行为组合条件
+    // EventComposeCondition => A行为次数 = 3
+    // EventComposeCondition => B行为次数 = 4
+    // EventComposeCondition => D .* Y .* R 序列发生次数 = 1
     private List<EventComposeCondition> eventComposeConditionList;
-
     // 规则匹配推送次数限制
     private int matchLimit;
-
     // 是否要注册timer
     private boolean onTimer;
-
     // 定时条件时间
     private List<TimerCondition> timerConditionList;
 

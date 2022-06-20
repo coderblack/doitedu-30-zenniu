@@ -1,4 +1,4 @@
-package cn.doitedu.rtmk.validate.doris;
+package cn.doitedu.rtmk.validate.benchmark;
 
 
 import org.apache.commons.lang3.RandomUtils;
@@ -13,7 +13,7 @@ import java.sql.*;
  * @Desc: 学大数据，到多易教育
  *    doris 过滤点查性能测试
  **/
-public class BenchMark {
+public class DorisBenchMark {
 
     public static void main(String[] args) throws SQLException {
 
