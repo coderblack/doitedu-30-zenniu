@@ -2,9 +2,9 @@ package cn.doitedu.rtmk.validate;
 
 import cn.doitedu.rtmk.validate.pojo.EventUnitCondition;
 import cn.doitedu.rtmk.validate.pojo.MarketingRule;
-import cn.doitedu.rtmk.validate.pojo.RuleManagementPojo;
+import cn.doitedu.rtmk.validate.pojo.RuleManagementBean;
 import cn.doitedu.rtmk.validate.pojo.UserMallEvent;
-import cn.doitedu.rtmk.validate.utils.EventUtil;
+import cn.doitedu.rtmk.validate.utils.EventUtils;
 import com.alibaba.fastjson.JSON;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.FilterFunction;
@@ -99,9 +99,9 @@ public class RuleEngineValidate {
         });
 
         // 把row数据变成内部的pojo数据
-        SingleOutputStreamOperator<RuleManagementPojo> ruleManagementStream = filtered.map(new MapFunction<Row, RuleManagementPojo>() {
+        SingleOutputStreamOperator<RuleManagementBean> ruleManagementStream = filtered.map(new MapFunction<Row, RuleManagementBean>() {
             @Override
-            public RuleManagementPojo map(Row row) throws Exception {
+            public RuleManagementBean map(Row row) throws Exception {
 
                 int id = row.<Integer>getFieldAs("id");
                 String rule_name = row.<String>getFieldAs("rule_name");
@@ -119,34 +119,34 @@ public class RuleEngineValidate {
                 byte kindByteValue = row.getKind().toByteValue();
                 int operateType = kindByteValue == 0 ? 1 : 2;
 
-                return new RuleManagementPojo(operateType, id, rule_name, marketingRule, rule_controller_drl, rule_status, create_time, modify_time, publisher);
+                return new RuleManagementBean(operateType, id, rule_name, marketingRule, rule_controller_drl, rule_status, create_time, modify_time, publisher);
             }
         });
         /*ruleManagementStream.print();*/
 
 
         // 广播规则信息，并连接到  事件流
-        MapStateDescriptor<Integer, RuleManagementPojo> broadCastStateDesc = new MapStateDescriptor<>("ruleMgmtPojo", Integer.class, RuleManagementPojo.class);
-        BroadcastStream<RuleManagementPojo> ruleBroadCastStream = ruleManagementStream.broadcast(broadCastStateDesc);
+        MapStateDescriptor<Integer, RuleManagementBean> broadCastStateDesc = new MapStateDescriptor<>("ruleMgmtPojo", Integer.class, RuleManagementBean.class);
+        BroadcastStream<RuleManagementBean> ruleBroadCastStream = ruleManagementStream.broadcast(broadCastStateDesc);
 
         eventStream
                 .keyBy(UserMallEvent::getTestGuid)
                 .connect(ruleBroadCastStream)
-                .process(new KeyedBroadcastProcessFunction<Long, UserMallEvent, RuleManagementPojo, String>() {
+                .process(new KeyedBroadcastProcessFunction<Long, UserMallEvent, RuleManagementBean, String>() {
                     @Override
-                    public void processElement(UserMallEvent event, KeyedBroadcastProcessFunction<Long, UserMallEvent, RuleManagementPojo, String>.ReadOnlyContext ctx, Collector<String> out) throws Exception {
+                    public void processElement(UserMallEvent event, KeyedBroadcastProcessFunction<Long, UserMallEvent, RuleManagementBean, String>.ReadOnlyContext ctx, Collector<String> out) throws Exception {
 
                         // 规则信息存储状态中，可能有很多的规则
-                        ReadOnlyBroadcastState<Integer, RuleManagementPojo> ruleState = ctx.getBroadcastState(broadCastStateDesc);
+                        ReadOnlyBroadcastState<Integer, RuleManagementBean> ruleState = ctx.getBroadcastState(broadCastStateDesc);
 
-                        for (Map.Entry<Integer, RuleManagementPojo> ruleEntry : ruleState.immutableEntries()) {
+                        for (Map.Entry<Integer, RuleManagementBean> ruleEntry : ruleState.immutableEntries()) {
 
                             if(  !ruleEntry.getValue().getRule_status().equals("1")) break;
 
                             EventUnitCondition triggerEventCondition = ruleEntry.getValue().getMarketingRule().getTriggerEventCondition();
 
                             // 用户的此次行为，是否满足这条规则的触发条件  ( 事件id相同，事件属性满足）
-                            boolean isTrig = EventUtil.eventMatchCondition(event, triggerEventCondition);
+                            boolean isTrig = EventUtils.eventMatchCondition(event, triggerEventCondition);
 
                             // 如果触发，则去计算规则中的各种属性条件是否满足
 
@@ -159,12 +159,12 @@ public class RuleEngineValidate {
                     }
 
                     @Override
-                    public void processBroadcastElement(RuleManagementPojo ruleManagementPojo, KeyedBroadcastProcessFunction<Long, UserMallEvent, RuleManagementPojo, String>.Context ctx, Collector<String> out) throws Exception {
+                    public void processBroadcastElement(RuleManagementBean ruleManagementPojo, KeyedBroadcastProcessFunction<Long, UserMallEvent, RuleManagementBean, String>.Context ctx, Collector<String> out) throws Exception {
                         System.out.println("注入一条规则,规则id为： " + ruleManagementPojo.getId());
 
                         // 规则动态发布功能在flink内部的注入处理
                         // 规则动态发布平台所做的：  新增规则，修改规则，下线规则，上线规则，停用规则…… 在我们的规则注入模块内部，都是一个put操作
-                        BroadcastState<Integer, RuleManagementPojo> ruleState = ctx.getBroadcastState(broadCastStateDesc);
+                        BroadcastState<Integer, RuleManagementBean> ruleState = ctx.getBroadcastState(broadCastStateDesc);
                         ruleState.put(ruleManagementPojo.getId(), ruleManagementPojo);
                     }
                 }).print();

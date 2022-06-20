@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RuleManagementPojo {
+public class RuleManagementBean {
     // 平台操作类型
     private int operationType;  // 1 表示新增规则 ； 2 表示修改规则
     // 规则id

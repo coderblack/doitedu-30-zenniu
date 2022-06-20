@@ -4,11 +4,7 @@ import cn.doitedu.rtmk.validate.pojo.EventUnitCondition;
 import cn.doitedu.rtmk.validate.pojo.UserMallEvent;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /***
  * @author hunter.d
@@ -18,7 +14,7 @@ import java.util.regex.Pattern;
  **/
 
 @Slf4j
-public class EventUtil {
+public class EventUtils {
 
    /* public static String eventSeq2Str(Iterator<UserMallEvent> eventSeq, List<EventCondition> eventConditionList){
         StringBuilder sb = new StringBuilder();
