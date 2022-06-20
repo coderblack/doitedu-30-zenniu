@@ -4,7 +4,11 @@ import cn.doitedu.rtmk.validate.pojo.EventUnitCondition;
 import cn.doitedu.rtmk.validate.pojo.UserMallEvent;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /***
  * @author hunter.d
@@ -16,10 +20,10 @@ import java.util.Set;
 @Slf4j
 public class EventUtils {
 
-   /* public static String eventSeq2Str(Iterator<UserMallEvent> eventSeq, List<EventCondition> eventConditionList){
+    public static String eventSeq2Str(Iterator<UserMallEvent> eventSeq, List<EventUnitCondition> eventConditionList){
         StringBuilder sb = new StringBuilder();
         while(eventSeq.hasNext()){
-            EventBean next = eventSeq.next();
+            UserMallEvent next = eventSeq.next();
             for(int i=1;i<=eventConditionList.size();i++)
             if(eventMatchCondition(next,eventConditionList.get(i-1))) sb.append(i);
         }
@@ -33,7 +37,7 @@ public class EventUtils {
         while(matcher.find()) count ++;
         //log.debug("字符串正则匹配,正则表达式：{}, 匹配结果为：{} ,字符串为：{} ",pattern,count,eventStr);
         return count;
-    }*/
+    }
 
     public static boolean eventMatchCondition(UserMallEvent bean, EventUnitCondition eventCondition){
         if (bean.getEventId().equals(eventCondition.getEventId())) {

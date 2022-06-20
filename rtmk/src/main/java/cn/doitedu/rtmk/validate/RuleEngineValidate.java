@@ -1,9 +1,7 @@
 package cn.doitedu.rtmk.validate;
 
-import cn.doitedu.rtmk.validate.pojo.EventUnitCondition;
-import cn.doitedu.rtmk.validate.pojo.MarketingRule;
-import cn.doitedu.rtmk.validate.pojo.RuleManagementBean;
-import cn.doitedu.rtmk.validate.pojo.UserMallEvent;
+import cn.doitedu.rtmk.validate.pojo.*;
+import cn.doitedu.rtmk.validate.utils.ConnectionUtils;
 import cn.doitedu.rtmk.validate.utils.EventUtils;
 import com.alibaba.fastjson.JSON;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
@@ -13,6 +11,7 @@ import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.common.state.BroadcastState;
 import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.state.ReadOnlyBroadcastState;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.CheckpointingMode;
@@ -27,8 +26,15 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
 public class RuleEngineValidate {
@@ -133,6 +139,17 @@ public class RuleEngineValidate {
                 .keyBy(UserMallEvent::getTestGuid)
                 .connect(ruleBroadCastStream)
                 .process(new KeyedBroadcastProcessFunction<Long, UserMallEvent, RuleManagementBean, String>() {
+                    Connection hbaseConnection;
+                    org.apache.hadoop.hbase.client.Table table;
+
+                    @Override
+                    public void open(Configuration parameters) throws Exception {
+
+                        hbaseConnection = ConnectionUtils.getHbaseConnection();
+                        table = hbaseConnection.getTable(TableName.valueOf("zenniu_profile"));
+
+                    }
+
                     @Override
                     public void processElement(UserMallEvent event, KeyedBroadcastProcessFunction<Long, UserMallEvent, RuleManagementBean, String>.ReadOnlyContext ctx, Collector<String> out) throws Exception {
 
@@ -141,19 +158,50 @@ public class RuleEngineValidate {
 
                         for (Map.Entry<Integer, RuleManagementBean> ruleEntry : ruleState.immutableEntries()) {
 
-                            if(  !ruleEntry.getValue().getRule_status().equals("1")) break;
+                            if (!ruleEntry.getValue().getRule_status().equals("1")) break;
 
-                            EventUnitCondition triggerEventCondition = ruleEntry.getValue().getMarketingRule().getTriggerEventCondition();
+                            MarketingRule marketingRule = ruleEntry.getValue().getMarketingRule();
 
                             // 用户的此次行为，是否满足这条规则的触发条件  ( 事件id相同，事件属性满足）
+                            EventUnitCondition triggerEventCondition = marketingRule.getTriggerEventCondition();
                             boolean isTrig = EventUtils.eventMatchCondition(event, triggerEventCondition);
 
-                            // 如果触发，则去计算规则中的各种属性条件是否满足
+                            // 如果触发，则去计算规则中的画像条件是否满足
+                            Result result = table.get(new Get(Bytes.toBytes(event.getTestGuid())));
+                            Map<String, String> userProfileConditions = marketingRule.getUserProfileConditions();
+
+                            // tag8 = v2 ;  tag28 = v1
+                            boolean profileIsMatch = true;
+                            for (Map.Entry<String, String> conditionEntry : userProfileConditions.entrySet()) {
+                                byte[] valueBytes = result.getValue("f".getBytes(), conditionEntry.getKey().getBytes());
+                                String value = Bytes.toString(valueBytes);
+                                // 只要遇到一个标签条件不满足，立即跳出循环
+                                if (!conditionEntry.getValue().equals(value)) {
+                                    profileIsMatch = false;
+                                    break;
+                                }
+                            }
+
+                            // 如果画像条件不满足，则跳出整个规则的后续计算
+                            if(!profileIsMatch) break;
+
+
+                            // 如果触发，则去计算规则中的行为属性条件是否满足
+                            List<EventComposeCondition> eventComposeConditionList = marketingRule.getEventComposeConditionList();
+
+                            // 遍历所有的“事件组合”条件，逐一判断是否满足
+                            // [ A:3, B:2, E*Q*W:1 ]
+                            for (EventComposeCondition eventComposeCondition : eventComposeConditionList) {
+
+
+
+
+                            }
+
 
                             // 如果规则完全满足，则输出触达信息
-
-                            if(isTrig) {
-                                out.collect(String.format("%d 用户， %s 事件 ，触发了规则： %d ",event.getTestGuid(),event.getEventId(),ruleEntry.getKey()));
+                            if (isTrig) {
+                                out.collect(String.format("%d 用户， %s 事件 ，触发了规则： %d ", event.getTestGuid(), event.getEventId(), ruleEntry.getKey()));
                             }
                         }
                     }
