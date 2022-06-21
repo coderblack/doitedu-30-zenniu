@@ -1,4 +1,4 @@
-package cn.doitedu.rtdw.log_etl.utils;//package eagle.utils;
+package backup.log_etl.utils;//package eagle.utils;
 
 import ch.hsr.geohash.GeoHash;
 import com.alibaba.fastjson.JSON;

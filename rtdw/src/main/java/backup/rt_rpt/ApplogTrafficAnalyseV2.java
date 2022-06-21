@@ -1,9 +1,9 @@
-package cn.doitedu.rtdw.rt_rpt;
+package backup.rt_rpt;
 
-import cn.doitedu.rtdw.log_etl.functions.TrafficAnalyseFunc;
-import cn.doitedu.rtdw.log_etl.pojo.EventBean;
-import cn.doitedu.rtdw.log_etl.pojo.TrafficBean;
-import cn.doitedu.rtdw.log_etl.utils.SqlHolder;
+import backup.log_etl.functions.TrafficAnalyseFunc;
+import backup.log_etl.pojo.EventBean;
+import backup.log_etl.pojo.TrafficBean;
+import backup.log_etl.utils.SqlHolder;
 import com.alibaba.fastjson.JSON;
 import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
@@ -17,11 +17,23 @@ import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.api.Schema;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 
-/***
- * @author hunter.d
- * @qq 657270652
- * @wx haitao-duan
- * @date 2022/4/6
+/**
+ * @Author: deep as the sea
+ * @Site: <a href="www.51doit.com">多易教育</a>
+ * @QQ: 657270652
+ * @Date: 2022/6/21
+ * @Tips: 学大数据，上多易教育 <br /> <br />
+ * @description:  <br />
+ *    流量数据分析 <br />
+ *    核心指标：<br />
+ *        pv  uv <br />
+ *       会话时长  会话次数 <br />
+ *       页面停留时长 <br />
+ *    主要维度： <br />
+ *       时间（日期，小时等） <br />
+ *       地域（省市区） <br />
+ *       终端类型（小米，华为，iphone，oppo等） <br />
+ *       页面（商品页，文章页，分类页，搜索页等） <br />
  **/
 public class ApplogTrafficAnalyseV2 {
     public static void main(String[] args) throws Exception {
@@ -39,7 +51,7 @@ public class ApplogTrafficAnalyseV2 {
                 .setStartingOffsets(OffsetsInitializer.latest())
                 .build();
 
-        // 从kafka的dwd明细topic读取数据
+        // 从kafka的 dwd明细 topic读取数据
         DataStreamSource<String> sourceStream = env.fromSource(kafkaSource,
                 WatermarkStrategy.noWatermarks(),
                 "dwd-applog");
@@ -78,6 +90,21 @@ public class ApplogTrafficAnalyseV2 {
          *    今日截止到当前，各渠道的新用户的   uv, pv,访问时长,访问次数
          *    今日截止到当前，各类终端型号的     uv,pv,访问时长,访问次数
          *    今日截止到当前，各省市区的        uv,pv,访问时长,访问次数
+         *
+         *    guid,会话id,切割会话id,行为时间,事件id,    所在页面id,   省,   市,    区,  设备类型,新老属性
+         *     1  , s1  , s1:t1   , t1    ,applaunch   , null  ,江苏省,苏州市,园林区, iphone8, 1
+         *     1  , s1  , s1:t1   , t2    ,pageload   , pg001  ,江苏省,苏州市,园林区, iphone8, 1
+         *     1  , s1  , s1:t1   , t3    , e1        , pg001  ,江苏省,苏州市,园林区, iphone8, 1
+         *     1  , s1  , s1:t1   , t4    ,putback    , pg001  ,江苏省,苏州市,园林区, iphone8, 1
+         *     1  , s1  , s1:t5   , t5    ,wakeup     , pg001  ,江苏省,苏州市,园林区, iphone8, 1
+         *     1  , s1  , s1:t5   , t6    ,pageload   , pg003  ,江苏省,苏州市,园林区, iphone8, 1
+         *     1  , s1  , s1:t5   , t7    , e1        , pg003  ,江苏省,苏州市,园林区, iphone8, 1
+         *     1  , s1  , s1:t5   , t8    , e1        , pg003  ,江苏省,苏州市,园林区, iphone8, 1
+         *     1  , s1  , s1:t5   , t9    ,pageload   , pg006  ,江苏省,苏州市,园林区, iphone8, 1
+         *     1  , s1  , s1:t5   , t10   ,appclose   , pg006  ,江苏省,苏州市,园林区, iphone8, 1
+         *
+         *
+         *
          *
          *    guid,会话id,切割会话id,行为时间,事件id,所在页面id,所在页面的加载时间,省,市,区,设备类型,新老属性
          *     1  , s1  , s1:t1   , t1    ,applaunch   , null  ,  t1       , 江苏省,苏州市,园林区, iphone8, 1
@@ -118,7 +145,7 @@ public class ApplogTrafficAnalyseV2 {
          *   今日截止到当前，停留时长最长的前20个页面
          */
         // 先统计每个页面的停留时长，会话数，pv数 ,将结果创建成一个临时视图 pageStatistic
-        tenv.executeSql(SqlHolder.Page_STAT_AGG);
+        tenv.executeSql(SqlHolder.PAGE_STAT_AGG);
         // 统计截止到当前，pv数最大的前20个页面
         tenv.executeSql("select * from pageStatistic order by pagePv desc  limit 20");
         // 统计截止到当前，uv数最大的前20个页面
@@ -136,17 +163,6 @@ public class ApplogTrafficAnalyseV2 {
          *   今日每一个小时段，各省市区的           uv ,pv,累计访问时长和访问次数
          */
         tenv.executeSql(SqlHolder.TRAFFIC_DIM_ANA_02);
-
-
-
-
-
-
-
-
-
-
-
 
 
         env.execute();

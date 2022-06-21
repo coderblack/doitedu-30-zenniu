@@ -1,4 +1,4 @@
-package cn.doitedu.rtdw.log_etl.utils;
+package backup.log_etl.utils;
 
 import ch.hsr.geohash.GeoHash;
 import org.apache.hadoop.conf.Configuration;

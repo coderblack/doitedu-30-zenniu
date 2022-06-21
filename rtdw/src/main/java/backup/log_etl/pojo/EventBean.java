@@ -1,4 +1,4 @@
-package cn.doitedu.rtdw.log_etl.pojo;
+package backup.log_etl.pojo;
 
 /**
  * Copyright 2022 bejson.com

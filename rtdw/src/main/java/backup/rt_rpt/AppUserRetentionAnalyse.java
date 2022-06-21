@@ -1,9 +1,9 @@
-package cn.doitedu.rtdw.rt_rpt;
+package backup.rt_rpt;
 
-import cn.doitedu.rtdw.log_etl.functions.TrafficAnalyseFunc;
-import cn.doitedu.rtdw.log_etl.pojo.EventBean;
-import cn.doitedu.rtdw.log_etl.pojo.TrafficBean;
-import cn.doitedu.rtdw.log_etl.utils.SqlHolder;
+import backup.log_etl.functions.TrafficAnalyseFunc;
+import backup.log_etl.pojo.EventBean;
+import backup.log_etl.pojo.TrafficBean;
+import backup.log_etl.utils.SqlHolder;
 import com.alibaba.fastjson.JSON;
 import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;

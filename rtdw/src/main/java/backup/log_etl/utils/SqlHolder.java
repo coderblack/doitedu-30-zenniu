@@ -1,4 +1,4 @@
-package cn.doitedu.rtdw.log_etl.utils;
+package backup.log_etl.utils;
 
 /***
  * @author hunter.d
@@ -48,128 +48,128 @@ public class SqlHolder {
 
 
     public static final String  DORIS_DETAIL_SINK_DML
-            = "INSERT INTO doris_appdetail_sink      \n" +
-            "SELECT              \n" +
-            "  eventid          ,\n" +
-            "  guid             ,\n" +
-            "  releasechannel   ,\n" +
-            "  account          ,\n" +
-            "  appid            ,\n" +
-            "  appversion       ,\n" +
-            "  carrier          ,\n" +
-            "  deviceid         ,\n" +
-            "  devicetype       ,\n" +
-            "  ip               ,\n" +
-            "  latitude         ,\n" +
-            "  longitude        ,\n" +
-            "  nettype          ,\n" +
-            "  osname           ,\n" +
-            "  osversion        ,\n" +
-            "  resolution       ,\n" +
-            "  sessionid        ,\n" +
-            "  `timestamp`      ,\n" +
-            "  registerTime     ,\n" +
-            "  firstAccessTime  ,\n" +
-            "  isNew            ,\n" +
-            "  geoHashCode      ,\n" +
-            "  province         ,\n" +
-            "  city             ,\n" +
-            "  region           ,\n" +
-            "  propsJson        ,\n" +
-            "  dw_date           \n" +
-            "FROM logdetail"   ;
+            = "INSERT INTO doris_appdetail_sink        " +
+            "SELECT                                    " +
+            "  eventid          ,                      " +
+            "  guid             ,                      " +
+            "  releasechannel   ,                      " +
+            "  account          ,                      " +
+            "  appid            ,                      " +
+            "  appversion       ,                      " +
+            "  carrier          ,                      " +
+            "  deviceid         ,                      " +
+            "  devicetype       ,                      " +
+            "  ip               ,                      " +
+            "  latitude         ,                      " +
+            "  longitude        ,                      " +
+            "  nettype          ,                      " +
+            "  osname           ,                      " +
+            "  osversion        ,                      " +
+            "  resolution       ,                      " +
+            "  sessionid        ,                      " +
+            "  `timestamp`      ,                      " +
+            "  registerTime     ,                      " +
+            "  firstAccessTime  ,                      " +
+            "  isNew            ,                      " +
+            "  geoHashCode      ,                      " +
+            "  province         ,                      " +
+            "  city             ,                      " +
+            "  region           ,                      " +
+            "  propsJson        ,                      " +
+            "  dw_date                                 " +
+            "FROM logdetail                            " ;
 
     public static final String KAFKA_DETAIL_SINK_DDL
-            ="CREATE TABLE kafka_dwd_sink (\n" +
-            "  eventid                String                ,\n" +
-            "  guid                   BIGINT                ,\n" +
-            "  releasechannel         String                ,\n" +
-            "  account                String                ,\n" +
-            "  appid                  String                ,\n" +
-            "  appversion             String                ,\n" +
-            "  carrier                String                ,\n" +
-            "  deviceid               String                ,\n" +
-            "  devicetype             String                ,\n" +
-            "  ip                     String                ,\n" +
-            "  latitude               double                ,\n" +
-            "  longitude              double                ,\n" +
-            "  nettype                String                ,\n" +
-            "  osname                 String                ,\n" +
-            "  osversion              String                ,\n" +
-            "  resolution             String                ,\n" +
-            "  sessionid              String                ,\n" +
-            "  `timestamp`            BIGINT                ,\n" +
-            "  registerTime           BIGINT                ,\n" +
-            "  firstAccessTime        BIGINT                ,\n" +
-            "  isNew                  int                   ,\n" +
-            "  geoHashCode            String                ,\n" +
-            "  province               String                ,\n" +
-            "  city                   String                ,\n" +
-            "  region                 String                ,\n" +
-            "  propsJson              String                ,\n" +
-            "  dw_date                STRING                 \n" +
-            ") WITH (                                      \n" +
-            "  'connector' = 'kafka',                      \n" +
-            "  'topic' = 'dwd-applog-detail',              \n" +
-            "  'properties.bootstrap.servers' = 'doit01:9092,doit02:9092,doit03:9092',    \n" +
-            "  'properties.group.id' = 'dwdsink',          \n" +
-            "  'scan.startup.mode' = 'latest-offset',      \n" +
-            "  'format' = 'json'                            \n" +
-            ")";
+            ="CREATE TABLE kafka_dwd_sink (                                              " +
+            "  eventid                String                ,                            " +
+            "  guid                   BIGINT                ,                            " +
+            "  releasechannel         String                ,                            " +
+            "  account                String                ,                            " +
+            "  appid                  String                ,                            " +
+            "  appversion             String                ,                            " +
+            "  carrier                String                ,                            " +
+            "  deviceid               String                ,                            " +
+            "  devicetype             String                ,                            " +
+            "  ip                     String                ,                            " +
+            "  latitude               double                ,                            " +
+            "  longitude              double                ,                            " +
+            "  nettype                String                ,                            " +
+            "  osname                 String                ,                            " +
+            "  osversion              String                ,                            " +
+            "  resolution             String                ,                            " +
+            "  sessionid              String                ,                            " +
+            "  `timestamp`            BIGINT                ,                            " +
+            "  registerTime           BIGINT                ,                            " +
+            "  firstAccessTime        BIGINT                ,                            " +
+            "  isNew                  int                   ,                            " +
+            "  geoHashCode            String                ,                            " +
+            "  province               String                ,                            " +
+            "  city                   String                ,                            " +
+            "  region                 String                ,                            " +
+            "  propsJson              String                ,                            " +
+            "  dw_date                STRING                                             " +
+            ") WITH (                                                                    " +
+            "  'connector' = 'kafka',                                                    " +
+            "  'topic' = 'dwd-applog-detail',                                            " +
+            "  'properties.bootstrap.servers' = 'doit01:9092,doit02:9092,doit03:9092',   " +
+            "  'properties.group.id' = 'dwdsink',                                        " +
+            "  'scan.startup.mode' = 'latest-offset',                                    " +
+            "  'format' = 'json'                                                         " +
+            ")                                                                           " ;
 
 
     public static final String KAFKA_DETAIL_SINK_DML
-            = "INSERT INTO kafka_dwd_sink      \n" +
-                    "SELECT              \n" +
-                    "  eventid          ,\n" +
-                    "  guid             ,\n" +
-                    "  releasechannel   ,\n" +
-                    "  account          ,\n" +
-                    "  appid            ,\n" +
-                    "  appversion       ,\n" +
-                    "  carrier          ,\n" +
-                    "  deviceid         ,\n" +
-                    "  devicetype       ,\n" +
-                    "  ip               ,\n" +
-                    "  latitude         ,\n" +
-                    "  longitude        ,\n" +
-                    "  nettype          ,\n" +
-                    "  osname           ,\n" +
-                    "  osversion        ,\n" +
-                    "  resolution       ,\n" +
-                    "  sessionid        ,\n" +
-                    "  `timestamp`      ,\n" +
-                    "  registerTime     ,\n" +
-                    "  firstAccessTime  ,\n" +
-                    "  isNew            ,\n" +
-                    "  geoHashCode      ,\n" +
-                    "  province         ,\n" +
-                    "  city             ,\n" +
-                    "  region           ,\n" +
-                    "  propsJson         ,\n" +
-                    "  dw_date           \n" +
-                    "FROM logdetail"   ;
+            = "INSERT INTO kafka_dwd_sink        " +
+                    "SELECT                      " +
+                    "  eventid          ,        " +
+                    "  guid             ,        " +
+                    "  releasechannel   ,        " +
+                    "  account          ,        " +
+                    "  appid            ,        " +
+                    "  appversion       ,        " +
+                    "  carrier          ,        " +
+                    "  deviceid         ,        " +
+                    "  devicetype       ,        " +
+                    "  ip               ,        " +
+                    "  latitude         ,        " +
+                    "  longitude        ,        " +
+                    "  nettype          ,        " +
+                    "  osname           ,        " +
+                    "  osversion        ,        " +
+                    "  resolution       ,        " +
+                    "  sessionid        ,        " +
+                    "  `timestamp`      ,        " +
+                    "  registerTime     ,        " +
+                    "  firstAccessTime  ,        " +
+                    "  isNew            ,        " +
+                    "  geoHashCode      ,        " +
+                    "  province         ,        " +
+                    "  city             ,        " +
+                    "  region           ,        " +
+                    "  propsJson        ,        " +
+                    "  dw_date                   " +
+                    "FROM logdetail              " ;
 
 
 
     public static final String TRAFFIC_AGG_USER_SESSION =
-            "create view traffic_agg_user_session  as     select                                                               \n" +
-                    "  guid                                                                                \n" +
-                    "  ,splitSessionId                                                                     \n" +
-                    "  ,province                                                                           \n" +
-                    "  ,city                                                                               \n" +
-                    "  ,region                                                                             \n" +
-                    "  ,deviceType                                                                         \n" +
-                    "  ,isNew                                                                              \n" +
-                    "  ,releaseChannel                                                                     \n" +
-                    "  ,max(ts)-min(ts) as sessionTimeLong                                                 \n" +
-                    "  ,sum(if(eventId='pageload',1,0)) as sessionPv                                       \n" +
-                    "from traffic                                                                          \n" +
+            "create view traffic_agg_user_session  as     select                                         " +
+                    "  guid                                                                              " +
+                    "  ,splitSessionId                                                                   " +
+                    "  ,province                                                                         " +
+                    "  ,city                                                                             " +
+                    "  ,region                                                                           " +
+                    "  ,deviceType                                                                       " +
+                    "  ,isNew                                                                            " +
+                    "  ,releaseChannel                                                                   " +
+                    "  ,max(ts)-min(ts) as sessionTimeLong                                               " +
+                    "  ,sum(if(eventId='pageload',1,0)) as sessionPv                                     " +
+                    "from traffic                                                                        " +
                     "group by guid,splitSessionId,province,city,region,deviceType,isNew,releaseChannel   ";
 
     public static final  String TRAFFIC_DIM_ANA_01 =
                     "   select                                " +
-                    "     province                           " +
+                    "     province                            " +
                     "     ,city                               " +
                     "     ,region                             " +
                     "     ,deviceType                         " +
@@ -189,7 +189,7 @@ public class SqlHolder {
                     "   )                                     " ;
 
 
-    public static final String Page_STAT_AGG =
+    public static final String PAGE_STAT_AGG =
             "        create temporary view pageStatistic                      " +
             "         as                                                      " +
             "        select                                                   " +
@@ -213,7 +213,7 @@ public class SqlHolder {
      *    按每小时段进行累计窗口统计各维度组合下的pv、uv、访问时长、会话数等
      */
     public static final String TRAFFIC_DIM_ANA_02
-            = "SELECT                                                                                                          " +
+            = "SELECT                                                                                                        " +
             "   window_start,                                                                                                " +
             "   window_end ,                                                                                                 " +
             "   releaseChannel,                                                                                              " +

@@ -1,4 +1,4 @@
-package cn.doitedu.rtdw.log_etl.utils;
+package backup.log_etl.utils;
 
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Connection;

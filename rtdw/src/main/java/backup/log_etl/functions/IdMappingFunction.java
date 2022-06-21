@@ -1,10 +1,10 @@
-package cn.doitedu.rtdw.log_etl.functions;
+package backup.log_etl.functions;
 
 
-import cn.doitedu.rtdw.log_etl.pojo.AccountIdMapBean;
-import cn.doitedu.rtdw.log_etl.pojo.DeviceIdMapBean;
-import cn.doitedu.rtdw.log_etl.pojo.EventBean;
-import cn.doitedu.rtdw.log_etl.utils.HbaseConnUtil;
+import backup.log_etl.pojo.AccountIdMapBean;
+import backup.log_etl.pojo.DeviceIdMapBean;
+import backup.log_etl.utils.HbaseConnUtil;
+import backup.log_etl.pojo.EventBean;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDescriptor;

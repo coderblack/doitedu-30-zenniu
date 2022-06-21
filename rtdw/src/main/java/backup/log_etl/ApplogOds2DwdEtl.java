@@ -1,10 +1,10 @@
-package cn.doitedu.rtdw.log_etl;
+package backup.log_etl;
 
+import backup.log_etl.functions.IdMappingFunction;
+import backup.log_etl.pojo.EventBean;
+import backup.log_etl.utils.SqlHolder;
 import ch.hsr.geohash.GeoHash;
-import cn.doitedu.rtdw.log_etl.functions.DimensionKeyedProcessFunction;
-import cn.doitedu.rtdw.log_etl.functions.IdMappingFunction;
-import cn.doitedu.rtdw.log_etl.pojo.EventBean;
-import cn.doitedu.rtdw.log_etl.utils.SqlHolder;
+import backup.log_etl.functions.DimensionKeyedProcessFunction;
 import com.alibaba.fastjson.JSON;
 
 import org.apache.commons.lang.time.DateUtils;

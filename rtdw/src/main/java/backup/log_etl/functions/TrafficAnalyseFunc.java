@@ -1,11 +1,9 @@
-package cn.doitedu.rtdw.log_etl.functions;
+package backup.log_etl.functions;
 
-import cn.doitedu.rtdw.log_etl.pojo.EventBean;
-import cn.doitedu.rtdw.log_etl.pojo.TrafficBean;
+import backup.log_etl.pojo.EventBean;
+import backup.log_etl.pojo.TrafficBean;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
-import org.apache.flink.api.common.typeinfo.Types;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.util.Collector;
@@ -18,13 +16,13 @@ import org.apache.flink.util.Collector;
  **/
 public class TrafficAnalyseFunc extends KeyedProcessFunction<Long, EventBean, TrafficBean> {
 
-    ValueState<Tuple2<String, Long>> pageState;
+    //ValueState<Tuple2<String, Long>> pageState;
     ValueState<Long> timerState;
     ValueState<TrafficBean> beanState;
     @Override
     public void open(Configuration parameters) throws Exception {
         // 开辟一个状态，记录： 当前所在的页面，及其加载时间
-        pageState = getRuntimeContext().getState(new ValueStateDescriptor<Tuple2<String, Long>>("pageState", Types.TUPLE(Types.STRING, Types.LONG)));
+        //pageState = getRuntimeContext().getState(new ValueStateDescriptor<Tuple2<String, Long>>("pageState", Types.TUPLE(Types.STRING, Types.LONG)));
 
         // 开辟一个状态，记录：最新的定时器时间
         timerState = getRuntimeContext().getState(new ValueStateDescriptor<Long>("timerState", Long.class));
@@ -64,7 +62,7 @@ public class TrafficAnalyseFunc extends KeyedProcessFunction<Long, EventBean, Tr
             collector.collect(preBean);
 
             // 更新 “当前页面”状态
-            pageState.update(Tuple2.of(eventBean.getProperties().get("pageId"), eventBean.getTimestamp()));
+            //pageState.update(Tuple2.of(eventBean.getProperties().get("pageId"), eventBean.getTimestamp()));
 
             // 更新 ”beanState“中上一条bean的eventid为当前最新的事件id
             preBean.setEventId(eventBean.getEventid());

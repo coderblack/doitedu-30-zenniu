@@ -1,4 +1,4 @@
-package cn.doitedu.rtdw.log_etl.pojo;
+package backup.log_etl.pojo;
 
 import lombok.*;
 
