@@ -20,6 +20,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.co.BroadcastProcessFunction;
 import org.apache.flink.streaming.api.functions.co.KeyedBroadcastProcessFunction;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
@@ -33,7 +34,9 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -136,9 +139,52 @@ public class RuleEngineValidate {
         BroadcastStream<RuleManagementBean> ruleBroadCastStream = ruleManagementStream.broadcast(broadCastStateDesc);
 
         eventStream
-                .keyBy(UserMallEvent::getTestGuid)
                 .connect(ruleBroadCastStream)
-                .process(new KeyedBroadcastProcessFunction<Long, UserMallEvent, RuleManagementBean, String>() {
+                .process(new BroadcastProcessFunction<UserMallEvent, RuleManagementBean, KeyTagedUserMallEvent>() {
+                    @Override
+                    public void processElement(UserMallEvent event, BroadcastProcessFunction<UserMallEvent, RuleManagementBean, KeyTagedUserMallEvent>.ReadOnlyContext ctx, Collector<KeyTagedUserMallEvent> out) throws Exception {
+                        ReadOnlyBroadcastState<Integer, RuleManagementBean> broadcastState = ctx.getBroadcastState(broadCastStateDesc);
+
+                        HashSet<String> keyByFieldNames = new HashSet<>();
+                        for (Map.Entry<Integer, RuleManagementBean> immutableEntry : broadcastState.immutableEntries()) {
+                            // "guid"
+                            // "ip"
+                            // "guid,ip"
+                            String keyByFields = immutableEntry.getValue().getMarketingRule().getKeyByFields();
+                            keyByFieldNames.add(keyByFields);
+                        }
+
+                        Class<UserMallEvent> userMallEventClass = UserMallEvent.class;
+                        // 开始复制数据
+                        for (String keyByFieldName : keyByFieldNames) {  // "guid", "ip",  "guid,ip"
+
+
+                            String[] fieldNames = keyByFieldName.split(",");
+                            StringBuilder tagValueBuilder = new StringBuilder();
+                            for (String fieldName : fieldNames) {
+                                Field declaredField = userMallEventClass.getDeclaredField(fieldName);
+                                declaredField.setAccessible(true);  // 设置私有字段的可见性
+                                Object fieldValue = declaredField.get(event);
+                                tagValueBuilder.append(fieldValue+"");
+                            }
+
+                            out.collect(new KeyTagedUserMallEvent(tagValueBuilder.toString(), event));
+
+                        }
+                    }
+                    @Override
+                    public void processBroadcastElement(RuleManagementBean ruleManagementPojo, BroadcastProcessFunction<UserMallEvent, RuleManagementBean, KeyTagedUserMallEvent>.Context ctx, Collector<KeyTagedUserMallEvent> out) throws Exception {
+                        System.out.println("注入一条规则,规则id为： " + ruleManagementPojo.getId());
+
+                        // 规则动态发布功能在flink内部的注入处理
+                        // 规则动态发布平台所做的：  新增规则，修改规则，下线规则，上线规则，停用规则…… 在我们的规则注入模块内部，都是一个put操作
+                        BroadcastState<Integer, RuleManagementBean> ruleState = ctx.getBroadcastState(broadCastStateDesc);
+                        ruleState.put(ruleManagementPojo.getId(), ruleManagementPojo);
+                    }
+                })
+                .keyBy(KeyTagedUserMallEvent::getKeyTagValue)
+                .connect(ruleBroadCastStream)
+                .process(new KeyedBroadcastProcessFunction<Long, KeyTagedUserMallEvent, RuleManagementBean, String>() {
                     Connection hbaseConnection;
                     org.apache.hadoop.hbase.client.Table table;
 
@@ -151,7 +197,7 @@ public class RuleEngineValidate {
                     }
 
                     @Override
-                    public void processElement(UserMallEvent event, KeyedBroadcastProcessFunction<Long, UserMallEvent, RuleManagementBean, String>.ReadOnlyContext ctx, Collector<String> out) throws Exception {
+                    public void processElement(KeyTagedUserMallEvent event, KeyedBroadcastProcessFunction<Long, KeyTagedUserMallEvent, RuleManagementBean, String>.ReadOnlyContext ctx, Collector<String> out) throws Exception {
 
                         // 规则信息存储状态中，可能有很多的规则
                         ReadOnlyBroadcastState<Integer, RuleManagementBean> ruleState = ctx.getBroadcastState(broadCastStateDesc);
@@ -164,11 +210,18 @@ public class RuleEngineValidate {
 
                             // 用户的此次行为，是否满足这条规则的触发条件  ( 事件id相同，事件属性满足）
                             EventUnitCondition triggerEventCondition = marketingRule.getTriggerEventCondition();
-                            boolean isTrig = EventUtils.eventMatchCondition(event, triggerEventCondition);
+                            boolean isTrig = EventUtils.eventMatchCondition(event.getUserMallEvent(), triggerEventCondition);
 
                             // 如果触发，则去计算规则中的画像条件是否满足
-                            Result result = table.get(new Get(Bytes.toBytes(event.getTestGuid())));
+                            Get get = new Get(Bytes.toBytes(event.getUserMallEvent().getTestGuid()));
+
                             Map<String, String> userProfileConditions = marketingRule.getUserProfileConditions();
+                            for (Map.Entry<String, String> tagValueEntry : userProfileConditions.entrySet()) {
+                                String tagName = tagValueEntry.getKey();
+                                get.addColumn("f".getBytes(),tagName.getBytes());
+                            }
+
+                            Result result = table.get(get);
 
                             // tag8 = v2 ;  tag28 = v1
                             boolean profileIsMatch = true;
@@ -193,21 +246,18 @@ public class RuleEngineValidate {
                             // [ A:3, B:2, E*Q*W:1 ]
                             for (EventComposeCondition eventComposeCondition : eventComposeConditionList) {
 
-
-
-
                             }
 
 
                             // 如果规则完全满足，则输出触达信息
                             if (isTrig) {
-                                out.collect(String.format("%d 用户， %s 事件 ，触发了规则： %d ", event.getTestGuid(), event.getEventId(), ruleEntry.getKey()));
+                                out.collect(String.format("%d 用户， %s 事件 ，触发了规则： %d ", event.getUserMallEvent().getTestGuid(), event.getUserMallEvent().getEventId(), ruleEntry.getKey()));
                             }
                         }
                     }
 
                     @Override
-                    public void processBroadcastElement(RuleManagementBean ruleManagementPojo, KeyedBroadcastProcessFunction<Long, UserMallEvent, RuleManagementBean, String>.Context ctx, Collector<String> out) throws Exception {
+                    public void processBroadcastElement(RuleManagementBean ruleManagementPojo, KeyedBroadcastProcessFunction<Long, KeyTagedUserMallEvent, RuleManagementBean, String>.Context ctx, Collector<String> out) throws Exception {
                         System.out.println("注入一条规则,规则id为： " + ruleManagementPojo.getId());
 
                         // 规则动态发布功能在flink内部的注入处理
@@ -215,7 +265,9 @@ public class RuleEngineValidate {
                         BroadcastState<Integer, RuleManagementBean> ruleState = ctx.getBroadcastState(broadCastStateDesc);
                         ruleState.put(ruleManagementPojo.getId(), ruleManagementPojo);
                     }
-                }).print();
+                })
+                .setParallelism(1000)
+                .print();
 
 
         env.execute();

@@ -57,7 +57,7 @@
       "timeRangeStart": 1000000000000
     }
   ],
-  "keyByFields": "testGuid",
+  "keyByFields": "testGuid,ip",
   "matchLimit": 0,
   "onTimer": false,
   "ruleId": "rule_001",
