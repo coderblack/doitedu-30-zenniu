@@ -1,0 +1,108 @@
+package backup.hudi;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.apache.flink.streaming.api.CheckpointingMode;
+import org.apache.flink.streaming.api.datastream.DataStreamSource;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.source.SourceFunction;
+import org.apache.flink.table.api.DataTypes;
+import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+
+import static org.apache.flink.table.api.Expressions.row;
+
+public class Flink2Hudi {
+    public static void main(String[] args) throws Exception {
+
+
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.enableCheckpointing(2000, CheckpointingMode.EXACTLY_ONCE);
+        env.getCheckpointConfig().setCheckpointStorage("file:///d:/checkpoint");
+        StreamTableEnvironment tenv = StreamTableEnvironment.create(env);
+
+        DataStreamSource<Bean> s = env.addSource(new MySource());
+        tenv.createTemporaryView("t_1",s);
+
+
+        // tenv.executeSql("select * from t_1").print();
+        // System.exit(1);
+
+        tenv.executeSql(
+                "CREATE TABLE flink_hive01(                                                \n" +
+                        "  guid bigint ,                                                             \n" +
+                        "  eventid string,                                                           \n" +
+                        "  ts bigint,                                                                \n" +
+                        "  dt string,                                                                \n" +
+                        "  primary key(guid,eventid) not enforced  --必须指定uuid 主键                \n" +
+                        ")                                                                         \n" +
+                        "PARTITIONED BY (dt)                                                       \n" +
+                        "with(                                                                     \n" +
+                        "'connector'='hudi'                                                       \n" +
+                        ", 'path'= 'hdfs://doitedu:8020/huditable/flink_hive01'                      \n" +
+                        ", 'hoodie.datasource.write.recordkey.field'= 'guid' -- 主键     \n" +
+                        ", 'write.precombine.field'= 'ts'-- 自动precombine的字段                   \n" +
+                        ", 'write.tasks'= '1'                                                      \n" +
+                        ", 'compaction.tasks'= '1'                                                 \n" +
+                        ", 'write.rate.limit'= '2000'-- 限速                                       \n" +
+                        ", 'table.type'= 'MERGE_ON_READ'-- 默认COPY_ON_WRITE,可选MERGE_ON_READ     \n" +
+                        ", 'compaction.async.enabled'= 'false'-- 是否开启异步压缩                  \n" +
+                        ", 'compaction.trigger.strategy'= 'num_commits'-- 按次数压缩               \n" +
+                        ", 'compaction.delta_commits'= '1'-- 默认为5                               \n" +
+                        ", 'changelog.enabled'= 'true'-- 开启changelog变更                         \n" +
+                        ", 'read.streaming.enabled'= 'true'-- 开启流读                             \n" +
+                        ", 'read.streaming.check-interval'= '3'-- 检查间隔，默认60s                \n" +
+                        ", 'hive_sync.enable'= 'true'-- 开启自动同步hive                           \n" +
+                        ", 'hive_sync.mode'= 'hms'-- 自动同步hive模式，默认jdbc模式                \n" +
+                        ", 'hive_sync.metastore.uris'= 'thrift://doitedu:9083'-- hive metastore地址\n" +
+                        "  -- , 'hive_sync.jdbc_url'= 'jdbc:hive2://hadoop:10000'-- hiveServer地址 \n" +
+                        ", 'hive_sync.table'= 'flink_hive01'-- hive 新建表名                       \n" +
+                        ", 'hive_sync.db'= 'huditable'-- hive 新建数据库名                         \n" +
+                        ", 'hive_sync.username'= ''-- HMS 用户名                                   \n" +
+                        ", 'hive_sync.password'= ''-- HMS 密码                                     \n" +
+                        ", 'hive_sync.support_timestamp'= 'true'-- 兼容hive timestamp类型   \n" +
+                        ")       \n"
+
+        );
+
+        //tenv.executeSql("select * from flink_hive01").print();
+
+        tenv.executeSql("insert into flink_hive01 select * from t_1");
+
+
+        tenv.executeSql("select * from flink_hive01").print();
+
+        env.execute();
+
+
+    }
+
+    public static class MySource implements SourceFunction<Bean>{
+
+        @Override
+        public void run(SourceContext<Bean> ctx) throws Exception {
+            int i= 0;
+            while(true){
+                i++;
+                ctx.collect(new Bean(i,"e"+i,i*1000,"2022-06-22"));
+                Thread.sleep(1000);
+            }
+        }
+
+        @Override
+        public void cancel() {
+
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Bean{
+        private int guid;
+        private String eventid;
+        private long ts;
+        private String dt;
+    }
+}

@@ -26,6 +26,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 
+import java.nio.charset.StandardCharsets;
+
 public class GeoQueryFromGaode {
 
     public static void main(String[] args) throws Exception {
@@ -54,7 +56,7 @@ public class GeoQueryFromGaode {
             public void open(Configuration parameters) throws Exception {
 
                 // 构造一个布隆过滤器
-                bloomFilter = BloomFilter.create(Funnels.stringFunnel(), 10000000, 0.01);
+                bloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), 10000000, 0.01);
 
                 // 构造一个hbase连接
                 Connection conn = HbaseConnUtil.getConn();
