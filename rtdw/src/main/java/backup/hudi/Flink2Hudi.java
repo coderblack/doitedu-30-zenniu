@@ -13,6 +13,20 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 
 import static org.apache.flink.table.api.Expressions.row;
 
+/**
+ * @Author: deep as the sea
+ * @Site: <a href="www.51doit.com">多易教育</a>
+ * @QQ: 657270652
+ * @Date: 2022/6/22
+ * @Desc:  核心参数说明
+ *   table.type: 测试中我们使用COPY_ON_WRITE。如果使用MERGE_ON_READ，在生成parquet文件之前，Hive查询不到数据
+ *   hive_sync.enable: 是否启用hive同步
+ *   hive_sync.mode: hive同步模式，包含hms和jdbc两种，这里使用hms模式
+ *   hive_sync.metastore.uris: 配置hive metastore的URI
+ *   hive_sync.table: 同步到hive中的表名称
+ *   hive_sync.db: 同步到hive的哪个数据库中
+
+ **/
 public class Flink2Hudi {
     public static void main(String[] args) throws Exception {
 
