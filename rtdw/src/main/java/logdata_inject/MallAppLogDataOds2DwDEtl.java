@@ -108,7 +108,7 @@ public class MallAppLogDataOds2DwDEtl {
                 .setDeliverGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
                 .setTransactionalIdPrefix("doitedu-")
                 .build();
-        resultStream.map(bean->JSON.toJSONString(bean)).sinkTo(kafkaSink);
+        resultStream.map(JSON::toJSONString).sinkTo(kafkaSink);
 
 
         env.execute();
