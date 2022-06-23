@@ -58,7 +58,7 @@ public class ActionLogAutoGen {
 
     public static void main(String[] args) throws Exception {
         // 第一次运行（或者后期需要重新初始化），设置为true
-        boolean isInitial = false;
+        boolean isInitial = true;
         // 第一次运行（或者后期需要重新初始化），设置为初始用户数，否则为 “增量用户数”
         int needNewUser =  100;
         // 是否需要将增量用户合并到历史用户并保存
@@ -67,7 +67,7 @@ public class ActionLogAutoGen {
         String hisUserDataPath = "data/users/";
         // 输出方式：console 或  kafka
         String collectorType = "kafka";
-        String topic = "zen-mall-events";
+        String topic = "mall-app-log";
         String host = "doitedu:9092";
 
 

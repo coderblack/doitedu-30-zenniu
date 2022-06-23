@@ -25,7 +25,16 @@ import static org.apache.flink.table.api.Expressions.row;
  *   hive_sync.metastore.uris: 配置hive metastore的URI
  *   hive_sync.table: 同步到hive中的表名称
  *   hive_sync.db: 同步到hive的哪个数据库中
-
+ * 在beeline中查询同步到hive表，按官网所说，需要设置参数：
+ *     hive.input.format=org.apache.hudi.hadoop.HoodieParquetInputFormat
+ *
+ * 而实际上，测试时用hive默认的inputFormat似乎也可以
+ *     hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat
+ *
+ * 对MOR表，用flink任务做离线压缩
+ *   ./bin/flink run -c org.apache.hudi.sink.compact.HoodieFlinkCompactor lib/hudi-flink-bundle_2.11-0.9.0.jar --path hdfs://xxx:9000/table
+ *
+ *
  **/
 public class Flink2Hudi {
     public static void main(String[] args) throws Exception {
@@ -44,48 +53,48 @@ public class Flink2Hudi {
         // System.exit(1);
 
         tenv.executeSql(
-                "CREATE TABLE flink_hive01(                                                \n" +
+                "CREATE TABLE flink_ht (                                                \n" +
                         "  guid bigint ,                                                             \n" +
                         "  eventid string,                                                           \n" +
                         "  ts bigint,                                                                \n" +
                         "  dt string,                                                                \n" +
-                        "  primary key(guid,eventid) not enforced  --必须指定uuid 主键                \n" +
+                        "  primary key(guid,eventid) not enforced  --必须指定主键                     \n" +
                         ")                                                                         \n" +
                         "PARTITIONED BY (dt)                                                       \n" +
                         "with(                                                                     \n" +
                         "'connector'='hudi'                                                       \n" +
-                        ", 'path'= 'hdfs://doitedu:8020/huditable/flink_hive01'                      \n" +
-                        ", 'hoodie.datasource.write.recordkey.field'= 'guid' -- 主键     \n" +
-                        ", 'write.precombine.field'= 'ts'-- 自动precombine的字段                   \n" +
+                        ", 'path'= 'hdfs://doitedu:8020/huditable/flink_ht'                      \n" +
+                        ", 'hoodie.datasource.write.recordkey.field'= 'guid，eventid'  -- 主键     \n" +
+                        ", 'write.precombine.field'= 'ts'  -- 自动precombine的字段                   \n" +
                         ", 'write.tasks'= '1'                                                      \n" +
                         ", 'compaction.tasks'= '1'                                                 \n" +
-                        ", 'write.rate.limit'= '2000'-- 限速                                       \n" +
-                        ", 'table.type'= 'MERGE_ON_READ'-- 默认COPY_ON_WRITE,可选MERGE_ON_READ     \n" +
-                        ", 'compaction.async.enabled'= 'false'-- 是否开启异步压缩                  \n" +
-                        ", 'compaction.trigger.strategy'= 'num_commits'-- 按次数压缩               \n" +
-                        ", 'compaction.delta_commits'= '1'-- 默认为5                               \n" +
-                        ", 'changelog.enabled'= 'true'-- 开启changelog变更                         \n" +
-                        ", 'read.streaming.enabled'= 'true'-- 开启流读                             \n" +
-                        ", 'read.streaming.check-interval'= '3'-- 检查间隔，默认60s                \n" +
-                        ", 'hive_sync.enable'= 'true'-- 开启自动同步hive                           \n" +
-                        ", 'hive_sync.mode'= 'hms'-- 自动同步hive模式，默认jdbc模式                \n" +
+                        ", 'write.rate.limit'= '2000'  -- 限速                                       \n" +
+                        ", 'table.type'= 'MERGE_ON_READ'  -- 默认COPY_ON_WRITE,可选MERGE_ON_READ     \n" +
+                        ", 'compaction.async.enabled'= 'true'  -- 是否开启异步压实                  \n" +
+                        ", 'compaction.trigger.strategy'= 'num_commits'  -- 异步压实按delta commit触发        \n" +
+                        ", 'compaction.delta_commits'= '5'  -- 默认为5                               \n" +
+                        ", 'changelog.enabled'= 'true'  -- 开启changelog变更                         \n" +
+                        ", 'read.streaming.enabled'= 'true' -- 开启流读                             \n" +
+                        ", 'read.streaming.check-interval'= '3'  -- 检查间隔，默认60s                \n" +
+                        ", 'hive_sync.enable'= 'true' -- 开启自动同步hive                           \n" +
+                        ", 'hive_sync.mode'= 'hms' -- 自动同步hive模式，默认jdbc模式                \n" +
                         ", 'hive_sync.metastore.uris'= 'thrift://doitedu:9083'-- hive metastore地址\n" +
                         "  -- , 'hive_sync.jdbc_url'= 'jdbc:hive2://hadoop:10000'-- hiveServer地址 \n" +
-                        ", 'hive_sync.table'= 'flink_hive01'-- hive 新建表名                       \n" +
-                        ", 'hive_sync.db'= 'huditable'-- hive 新建数据库名                         \n" +
-                        ", 'hive_sync.username'= ''-- HMS 用户名                                   \n" +
-                        ", 'hive_sync.password'= ''-- HMS 密码                                     \n" +
-                        ", 'hive_sync.support_timestamp'= 'true'-- 兼容hive timestamp类型   \n" +
+                        ", 'hive_sync.table'= 'flink_ht'  -- hive 新建表名                       \n" +
+                        ", 'hive_sync.db'= 'huditable'  -- hive 新建数据库名                         \n" +
+                        ", 'hive_sync.username'= ''  -- HMS 用户名                                   \n" +
+                        ", 'hive_sync.password'= ''  -- HMS 密码                                     \n" +
+                        ", 'hive_sync.support_timestamp'= 'true'  -- 兼容hive timestamp类型   \n" +
                         ")       \n"
 
         );
 
         //tenv.executeSql("select * from flink_hive01").print();
 
-        tenv.executeSql("insert into flink_hive01 select * from t_1");
+        tenv.executeSql("insert into flink_ht select * from t_1");
 
 
-        tenv.executeSql("select * from flink_hive01").print();
+        tenv.executeSql("select * from flink_ht").print();
 
         env.execute();
 

@@ -1,4 +1,4 @@
-package backup.log_etl.pojo;
+package pojo;
 
 /**
  * Copyright 2022 bejson.com
@@ -23,8 +23,8 @@ public class EventBean {
     private String devicetype;
     private String eventid;
     private String ip;
-    private double latitude;
-    private double longitude;
+    private Double latitude;
+    private Double longitude;
     private String nettype;
     private String osname;
     private String osversion;

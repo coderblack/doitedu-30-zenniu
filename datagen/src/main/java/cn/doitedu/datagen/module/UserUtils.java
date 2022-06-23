@@ -50,8 +50,8 @@ public class UserUtils {
             // deviceid直接用account
             logBean.setDeviceId(RandomStringUtils.randomAlphabetic(4).toLowerCase()+"-"+RandomStringUtils.randomNumeric(4));
             logBean.setIp(RandomUtils.nextInt(10, 12) + "." + RandomUtils.nextInt(20, 22) + "." + RandomUtils.nextInt(100, 102) + "." + RandomUtils.nextInt(60, 66));
-            logBean.setLatitude(RandomUtils.nextDouble(10.0, 52.0));
-            logBean.setLongitude(RandomUtils.nextDouble(120.0, 160.0));
+            logBean.setLatitude(RandomUtils.nextDouble(22.0, 42.0));
+            logBean.setLongitude(RandomUtils.nextDouble(100.0, 120.0));
             if (RandomUtils.nextInt(1, 10) % 4 == 0) {
                 logBean.setDeviceType(androidDeviceTypes[RandomUtils.nextInt(0, androidDeviceTypes.length)]);
                 logBean.setOsName("android");
