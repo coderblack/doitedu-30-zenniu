@@ -3,7 +3,10 @@ package pojo;
 /**
  * Copyright 2022 bejson.com
  */
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.apache.flink.table.annotation.DataTypeHint;
 
 import java.util.Map;
@@ -12,7 +15,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class EventBean {
+public class EventBeanWithPageStart {
 
     public String account;
     public String appid;
@@ -27,7 +30,7 @@ public class EventBean {
     public String nettype;
     public String osname;
     public String osversion;
-    public @DataTypeHint("MAP<STRING,STRING>") Map<String,String> properties;
+    public Map<String,String> properties;
     public String releasechannel;
     public String resolution;
     public String sessionid;
@@ -37,29 +40,16 @@ public class EventBean {
     public long registerTime;
     // 如果是非注册用户，则这里表示首次到访时间
     public long firstAccessTime;
-
     // 新老访客属性
     public int isNew;
-
-    // 新老会员属性
-    //private int isNewMember;
-
     // geohash码
     public String geoHashCode;
-
     // 省市区维度字段
     public String province;
     public String city;
     public String region;
 
-    // properties的json格式字段
-    public String propsJson;
-
     public long pageStartTime;
-
-    public String startPageId;
-
-    public String newSessionId;
 
 
 }
