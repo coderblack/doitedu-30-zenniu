@@ -19,10 +19,15 @@ import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
+import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
+import org.apache.flink.table.api.DataTypes;
+import org.apache.flink.table.api.EnvironmentSettings;
+import org.apache.flink.table.api.Schema;
+import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -67,7 +72,10 @@ public class MallAppLogDataOds2DwDEtl {
     public static void main(String[] args) throws Exception {
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.enableCheckpointing(2000, CheckpointingMode.EXACTLY_ONCE);
+        env.getCheckpointConfig().setCheckpointStorage("file:///d:/checkpoint");
         env.setParallelism(1);
+        StreamTableEnvironment tenv = StreamTableEnvironment.create(env, EnvironmentSettings.inStreamingMode());
 
         // 从kafka的 商城app通用行为日志topic中消费埋点日志数据
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
@@ -111,6 +119,134 @@ public class MallAppLogDataOds2DwDEtl {
         resultStream.map(JSON::toJSONString).sinkTo(kafkaSink);
 
 
+        // 将处理好的dwd数据，创建成视图，以便于插入hudi表
+        tenv.createTemporaryView("dwd_view",resultStream,Schema.newBuilder()
+                .column("account",DataTypes.STRING())
+                .column("appid",DataTypes.STRING())
+                .column("appversion",DataTypes.STRING())
+                .column("carrier",DataTypes.STRING())
+                .column("deviceid",DataTypes.STRING())
+                .column("devicetype",DataTypes.STRING())
+                .column("eventid",DataTypes.STRING())
+                .column("ip",DataTypes.STRING())
+                .column("latitude",DataTypes.DOUBLE())
+                .column("longitude",DataTypes.DOUBLE())
+                .column("nettype",DataTypes.STRING())
+                .column("osname",DataTypes.STRING())
+                .column("osversion",DataTypes.STRING())
+                .column("properties",DataTypes.MAP(DataTypes.STRING(),DataTypes.STRING()))
+                .column("releasechannel",DataTypes.STRING())
+                .column("resolution",DataTypes.STRING())
+                .column("sessionid",DataTypes.STRING())
+                .column("timestamp",DataTypes.BIGINT())
+                .column("guid",DataTypes.BIGINT())
+                .column("registerTime",DataTypes.BIGINT())
+                .column("firstAccessTime",DataTypes.BIGINT())
+                .column("isNew",DataTypes.INT())
+                .column("geoHashCode",DataTypes.STRING())
+                .column("province",DataTypes.STRING())
+                .column("city",DataTypes.STRING())
+                .column("region",DataTypes.STRING())
+                .build());
+
+        tenv.executeSql("desc dwd_view").print();
+
+        // 将处理好的dwd数据落地到 hudi （离线数仓的底层存储）
+        tenv.executeSql(
+                "create table dwd_hudi_mall_app_log (                                           \n" +
+                        "   uuid               string                                                    \n" +
+                        "  ,account            String                                                    \n" +
+                        "  ,appid              String                                                    \n" +
+                        "  ,appversion         String                                                    \n" +
+                        "  ,carrier            String                                                    \n" +
+                        "  ,deviceid           String                                                    \n" +
+                        "  ,devicetype         String                                                    \n" +
+                        "  ,eventid            String                                                    \n" +
+                        "  ,ip                 String                                                    \n" +
+                        "  ,latitude           Double                                                    \n" +
+                        "  ,longitude          Double                                                    \n" +
+                        "  ,nettype            String                                                    \n" +
+                        "  ,osname             String                                                    \n" +
+                        "  ,osversion          String                                                    \n" +
+                        "  ,properties         map<string,string>                                        \n" +
+                        "  ,releasechannel     String                                                    \n" +
+                        "  ,resolution         String                                                    \n" +
+                        "  ,sessionid          String                                                    \n" +
+                        "  ,ts                 bigint                                                    \n" +
+                        "  ,guid               bigint                                                    \n" +
+                        "  ,registerTime       bigint                                                    \n" +
+                        "  ,firstAccessTime    bigint                                                    \n" +
+                        "  ,isNew              int                                                       \n" +
+                        "  ,geoHashCode        String                                                    \n" +
+                        "  ,province           String                                                    \n" +
+                        "  ,city               String                                                    \n" +
+                        "  ,region             String                                                    \n" +
+                        "  ,dt                 string                                                    \n" +
+                        ")                                                                               \n" +
+                        "PARTITIONED BY (dt)                                                             \n" +
+                        "with(                                                                           \n" +
+                        "  'connector'='hudi'                                                            \n" +
+                        ", 'path'= 'hdfs://doitedu:8020/hudi_lake/dwd/mall_app_log'                      \n" +
+                        ", 'hoodie.datasource.write.recordkey.field'= 'uuid'                             \n" +
+                        ", 'write.precombine.field'= 'ts'                                                \n" +
+                        ", 'write.tasks'= '1'                                                            \n" +
+                        ", 'compaction.tasks'= '1'                                                       \n" +
+                        ", 'write.rate.limit'= '2000'                                                    \n" +
+                        ", 'table.type'= 'COPY_ON_WRITE'                                                 \n" +
+                        ", 'compaction.async.enabled'= 'false'                                           \n" +
+                        ", 'compaction.trigger.strategy'= 'num_commits'                                  \n" +
+                        ", 'compaction.delta_commits'= '5'                                               \n" +
+                        ", 'changelog.enabled'= 'true'                                                   \n" +
+                        ", 'read.streaming.enabled'= 'true'                                              \n" +
+                        ", 'read.streaming.check-interval'= '3'                                          \n" +
+                        ", 'hoodie.insert.shuffle.parallelism'= '2'                                      \n" +
+                        ", 'hive_sync.enable'= 'true'                                                    \n" +
+                        ", 'hive_sync.mode'= 'hms'                                                       \n" +
+                        ", 'hive_sync.metastore.uris'= 'thrift://doitedu:9083'                           \n" +
+                        ", 'hive_sync.table'= 'mall_app_log'                                             \n" +
+                        ", 'hive_sync.db'= 'dwd'                                                         \n" +
+                        ", 'hive_sync.username'= ''                                                      \n" +
+                        ", 'hive_sync.password'= ''                                                      \n" +
+                        ", 'hive_sync.support_timestamp'= 'true'                                         \n" +
+                        ")                                                                               "
+
+        );
+
+
+        // 从处理结果表查询数据插入到  hudi 连接器表
+        tenv.executeSql(
+                " insert into dwd_hudi_mall_app_log                                     "
+                        +" SELECT                                                                "
+                        +"  uuid() as  uuid                                                      "
+                        +" ,account                                                              "
+                        +" ,appid                                                                "
+                        +" ,appversion                                                           "
+                        +" ,carrier                                                              "
+                        +" ,deviceid                                                             "
+                        +" ,devicetype                                                           "
+                        +" ,eventid                                                              "
+                        +" ,ip                                                                   "
+                        +" ,latitude                                                             "
+                        +" ,longitude                                                            "
+                        +" ,nettype                                                              "
+                        +" ,osname                                                               "
+                        +" ,osversion                                                            "
+                        +" ,properties                                                           "
+                        +" ,releasechannel                                                       "
+                        +" ,resolution                                                           "
+                        +" ,sessionid                                                            "
+                        +" ,`timestamp` as ts                                                    "
+                        +" ,guid                                                                 "
+                        +" ,registerTime                                                         "
+                        +" ,firstAccessTime                                                      "
+                        +" ,isNew                                                                "
+                        +" ,geoHashCode                                                          "
+                        +" ,province                                                             "
+                        +" ,city                                                                 "
+                        +" ,region                                                               "
+                        +" ,DATE_FORMAT(to_timestamp_ltz(`timestamp`,3),'yyyy-MM-dd') as dt      "
+                        +" FROM dwd_view                                                         "
+        );
         env.execute();
     }
 }

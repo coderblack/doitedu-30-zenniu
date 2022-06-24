@@ -58,7 +58,7 @@ public class ActionLogAutoGen {
 
     public static void main(String[] args) throws Exception {
         // 第一次运行（或者后期需要重新初始化），设置为true
-        boolean isInitial = true;
+        boolean isInitial = false;
         // 第一次运行（或者后期需要重新初始化），设置为初始用户数，否则为 “增量用户数”
         int needNewUser =  100;
         // 是否需要将增量用户合并到历史用户并保存
