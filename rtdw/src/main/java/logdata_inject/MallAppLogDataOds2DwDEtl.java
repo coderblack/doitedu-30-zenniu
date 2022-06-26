@@ -247,6 +247,12 @@ public class MallAppLogDataOds2DwDEtl {
                         +" ,DATE_FORMAT(to_timestamp_ltz(`timestamp`,3),'yyyy-MM-dd') as dt      "
                         +" FROM dwd_view                                                         "
         );
+
+
+
+
+
+
         env.execute();
     }
 }

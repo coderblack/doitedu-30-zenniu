@@ -18,6 +18,13 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.15</version>
+        </dependency>
+
+
+        <dependency>
             <groupId>ch.hsr</groupId>
             <artifactId>geohash</artifactId>
             <version>1.4.0</version>
@@ -36,6 +43,9 @@
             <artifactId>hudi-flink1.14-bundle_2.12</artifactId>
             <version>0.11.0</version>
         </dependency>
+
+
+
 
         <!-- hudi-bundle 需要用hive，居然需要手动加-->
         <dependency>
