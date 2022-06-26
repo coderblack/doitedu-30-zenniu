@@ -45,7 +45,11 @@
         </dependency>
 
 
-
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-cep_2.12</artifactId>
+            <version>${flink.version}</version>
+        </dependency>
 
         <!-- hudi-bundle 需要用hive，居然需要手动加-->
         <dependency>
