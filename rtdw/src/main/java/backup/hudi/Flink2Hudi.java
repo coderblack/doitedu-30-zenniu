@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.table.api.DataTypes;
@@ -41,36 +42,45 @@ public class Flink2Hudi {
 
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
         env.enableCheckpointing(2000, CheckpointingMode.EXACTLY_ONCE);
         env.getCheckpointConfig().setCheckpointStorage("file:///d:/checkpoint");
         StreamTableEnvironment tenv = StreamTableEnvironment.create(env);
 
-        DataStreamSource<Bean> s = env.addSource(new MySource());
-        tenv.createTemporaryView("t_1",s);
+        // 自动连续生成数据
+        // DataStreamSource<Bean> s = env.addSource(new MySource());
 
+        // 手动逐条生成数据
+        DataStreamSource<String> ds = env.socketTextStream("doit01", 9999);
+        SingleOutputStreamOperator<Bean> s = ds.map(line -> {
+            String[] split = line.split(",");
+            return new Bean(Integer.parseInt(split[0]), split[1], Long.parseLong(split[2]), split[3]);
+        });
+
+        tenv.createTemporaryView("t_1",s);
 
         // tenv.executeSql("select * from t_1").print();
         // System.exit(1);
 
         tenv.executeSql(
-                "CREATE TABLE flink_ht (                                                \n" +
+                "CREATE TABLE hd_mor (                                                    \n" +
                         "  guid bigint ,                                                             \n" +
                         "  eventid string,                                                           \n" +
                         "  ts bigint,                                                                \n" +
                         "  dt string,                                                                \n" +
-                        "  primary key(guid,eventid) not enforced  --必须指定主键                     \n" +
-                        ")                                                                         \n" +
-                        "PARTITIONED BY (dt)                                                       \n" +
-                        "with(                                                                     \n" +
-                        "'connector'='hudi'                                                       \n" +
-                        ", 'path'= 'hdfs://doitedu:8020/huditable/flink_ht'                      \n" +
-                        ", 'hoodie.datasource.write.recordkey.field'= 'guid，eventid'  -- 主键     \n" +
-                        ", 'write.precombine.field'= 'ts'  -- 自动precombine的字段                   \n" +
-                        ", 'write.tasks'= '1'                                                      \n" +
-                        ", 'compaction.tasks'= '1'                                                 \n" +
+                        "  primary key(guid,eventid) not enforced  --必须指定主键                       \n" +
+                        ")                                                                           \n" +
+                        "PARTITIONED BY (dt)                                                         \n" +
+                        "with(                                                                       \n" +
+                        "'connector'='hudi'                                                         \n" +
+                        ", 'path'= 'hdfs://doit01:8020/huditable/hd_mor'                          \n" +
+                        ", 'hoodie.datasource.write.recordkey.field'= 'guid,eventid'  -- 主键        \n" +
+                        ", 'write.precombine.field'= 'ts'  -- 自动precombine的字段                     \n" +
+                        ", 'write.tasks'= '1'                                                       \n" +
+                        ", 'compaction.tasks'= '1'                                                   \n" +
                         ", 'write.rate.limit'= '2000'  -- 限速                                       \n" +
                         ", 'table.type'= 'MERGE_ON_READ'  -- 默认COPY_ON_WRITE,可选MERGE_ON_READ     \n" +
-                        ", 'compaction.async.enabled'= 'true'  -- 是否开启异步压实                  \n" +
+                        ", 'compaction.async.enabled'= 'true'  -- 是否开启异步压实                     \n" +
                         ", 'compaction.trigger.strategy'= 'num_commits'  -- 异步压实按delta commit触发        \n" +
                         ", 'compaction.delta_commits'= '5'  -- 默认为5                               \n" +
                         ", 'changelog.enabled'= 'true'  -- 开启changelog变更                         \n" +
@@ -78,23 +88,61 @@ public class Flink2Hudi {
                         ", 'read.streaming.check-interval'= '3'  -- 检查间隔，默认60s                \n" +
                         ", 'hive_sync.enable'= 'true' -- 开启自动同步hive                           \n" +
                         ", 'hive_sync.mode'= 'hms' -- 自动同步hive模式，默认jdbc模式                \n" +
-                        ", 'hive_sync.metastore.uris'= 'thrift://doitedu:9083'-- hive metastore地址\n" +
-                        "  -- , 'hive_sync.jdbc_url'= 'jdbc:hive2://hadoop:10000'-- hiveServer地址 \n" +
-                        ", 'hive_sync.table'= 'flink_ht'  -- hive 新建表名                       \n" +
-                        ", 'hive_sync.db'= 'huditable'  -- hive 新建数据库名                         \n" +
+                        ", 'hive_sync.metastore.uris'= 'thrift://doit01:9083'-- hive metastore地址\n" +
+                        ", 'hive_sync.table'= 'hd_mor'  -- hive 新建表名                       \n" +
+                        ", 'hive_sync.db'= 'hudb'  -- hive 新建数据库名                         \n" +
                         ", 'hive_sync.username'= ''  -- HMS 用户名                                   \n" +
                         ", 'hive_sync.password'= ''  -- HMS 密码                                     \n" +
                         ", 'hive_sync.support_timestamp'= 'true'  -- 兼容hive timestamp类型   \n" +
-                        ")       \n"
+                        ")                                                                  \n"
 
         );
 
+
+        tenv.executeSql(
+                "CREATE TABLE hd_cow  (                                                    \n" +
+                        "  guid bigint ,                                                             \n" +
+                        "  eventid string,                                                           \n" +
+                        "  ts bigint,                                                                \n" +
+                        "  dt string,                                                                \n" +
+                        "  primary key(guid,eventid) not enforced  --必须指定主键                       \n" +
+                        ")                                                                           \n" +
+                        "PARTITIONED BY (dt)                                                         \n" +
+                        "with(                                                                       \n" +
+                        "'connector'='hudi'                                                         \n" +
+                        ", 'path'= 'hdfs://doit01:8020/huditable/hd_cow'                          \n" +
+                        ", 'hoodie.datasource.write.recordkey.field'= 'guid,eventid'  -- 主键        \n" +
+                        ", 'write.precombine.field'= 'ts'  -- 自动precombine的字段                     \n" +
+                        ", 'write.tasks'= '1'                                                       \n" +
+                        ", 'compaction.tasks'= '1'                                                   \n" +
+                        ", 'write.rate.limit'= '2000'  -- 限速                                       \n" +
+                        ", 'table.type'= 'COPY_ON_WRITE'  -- 默认COPY_ON_WRITE,可选MERGE_ON_READ     \n" +
+                        ", 'compaction.async.enabled'= 'true'  -- 是否开启异步压实                     \n" +
+                        ", 'compaction.trigger.strategy'= 'num_commits'  -- 异步压实按delta commit触发        \n" +
+                        ", 'compaction.delta_commits'= '5'  -- 默认为5                               \n" +
+                        ", 'changelog.enabled'= 'true'  -- 开启changelog变更                         \n" +
+                        ", 'read.streaming.enabled'= 'true' -- 开启流读                               \n" +
+                        ", 'read.streaming.check-interval'= '3'  -- 检查间隔，默认60s                  \n" +
+                        ", 'hive_sync.enable'= 'true' -- 开启自动同步hive                             \n" +
+                        ", 'hive_sync.mode'= 'hms' -- 自动同步hive模式，默认jdbc模式                    \n" +
+                        ", 'hive_sync.metastore.uris'= 'thrift://doit01:9083'-- hive metastore地址   \n" +
+                        ", 'hive_sync.table'= 'hd_cow'  -- hive 新建表名                           \n" +
+                        ", 'hive_sync.db'= 'hudb'  -- hive 新建数据库名                               \n" +
+                        ", 'hive_sync.username'= ''  -- HMS 用户名                                   \n" +
+                        ", 'hive_sync.password'= ''  -- HMS 密码                                     \n" +
+                        ", 'hive_sync.support_timestamp'= 'true'  -- 兼容hive timestamp类型           \n" +
+                        ")                                                                           \n"
+
+        );
+
+
         //tenv.executeSql("select * from flink_hive01").print();
 
-        tenv.executeSql("insert into flink_ht select * from t_1");
+        tenv.executeSql("insert into hd_cow select * from t_1");
+        tenv.executeSql("insert into hd_mor select * from t_1");
 
 
-        tenv.executeSql("select * from flink_ht").print();
+        tenv.executeSql("select * from hd_mor").print();
 
         env.execute();
 
@@ -102,7 +150,6 @@ public class Flink2Hudi {
     }
 
     public static class MySource implements SourceFunction<Bean>{
-
         @Override
         public void run(SourceContext<Bean> ctx) throws Exception {
             int i= 0;
@@ -112,7 +159,6 @@ public class Flink2Hudi {
                 Thread.sleep(1000);
             }
         }
-
         @Override
         public void cancel() {
 
