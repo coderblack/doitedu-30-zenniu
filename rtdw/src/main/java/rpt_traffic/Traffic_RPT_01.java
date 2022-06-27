@@ -1,4 +1,4 @@
-package traffic_rpt;
+package rpt_traffic;
 
 import com.alibaba.fastjson2.JSON;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;

@@ -1,4 +1,4 @@
-package traffic_rpt;
+package rpt_traffic;
 
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
